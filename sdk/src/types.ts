@@ -23,7 +23,7 @@ export interface Memory {
   content_hash: string;
   metadata: Record<string, unknown>;
   token_count: number;
-  chunk_count: number;
+  chunk_count?: number;
   created_at: string;
   updated_at: string;
 }
@@ -33,10 +33,8 @@ export interface Memory {
  */
 export interface CreateMemoryRequest {
   content: string;
-  source?: string;
-  tags?: string[];
-  external_id?: string;
-  metadata?: Record<string, unknown>;
+  metadata: Record<string, unknown>;
+  project_id?: string;
 }
 
 /**
@@ -63,6 +61,7 @@ export interface UpdateMemoryRequest {
 export interface ListMemoriesOptions {
   limit?: number;
   cursor?: string;
+  project_id?: string;
 }
 
 /**
@@ -70,11 +69,11 @@ export interface ListMemoriesOptions {
  */
 export interface SearchRequest {
   query: string;
-  top_k?: number;
+  limit?: number;
   threshold?: number;
+  project_id?: string;
   filters?: {
-    tags?: string[];
-    source?: string;
+    metadata?: Record<string, unknown>;
   };
 }
 
