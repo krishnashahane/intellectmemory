@@ -50,9 +50,9 @@ function normalizeBaseUrl(value: string): string {
   return url.toString().replace(/\/$/, '');
 }
 
-function positiveInteger(value: number, name: string, max: number): number {
-  if (!Number.isInteger(value) || value < 0 || value > max) {
-    throw new Error(`${name} must be an integer between 0 and ${max}`);
+function boundedInteger(value: number, name: string, min: number, max: number): number {
+  if (!Number.isInteger(value) || value < min || value > max) {
+    throw new Error(`${name} must be an integer between ${min} and ${max}`);
   }
   return value;
 }
@@ -269,7 +269,7 @@ export class IntellectMemoryClient {
     pagination: { next_cursor: string | null; has_more: boolean };
   }> {
     const params = new URLSearchParams();
-    if (options.limit !== undefined) params.set('limit', String(positiveInteger(options.limit, 'limit', 100)));
+    if (options.limit !== undefined) params.set('limit', String(boundedInteger(options.limit, 'limit', 1, 100)));
     if (options.cursor) params.set('cursor', options.cursor);
     if (options.project_id) params.set('project_id', options.project_id);
     const query = params.toString();
