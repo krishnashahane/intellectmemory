@@ -33,7 +33,7 @@ export interface Memory {
  */
 export interface CreateMemoryRequest {
   content: string;
-  metadata: Record<string, unknown>;
+  metadata?: Record<string, unknown>;
   project_id?: string;
 }
 
