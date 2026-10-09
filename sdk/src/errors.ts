@@ -1,21 +1,16 @@
-/**
- * Base error class for SDK errors
- */
 export class IntellectMemoryError extends Error {
   constructor(
     message: string,
     public readonly code: string,
     public readonly status?: number,
-    public readonly details?: Record<string, unknown>
+    public readonly details?: Record<string, unknown>,
+    options?: ErrorOptions
   ) {
-    super(message);
+    super(message, options);
     this.name = 'IntellectMemoryError';
   }
 }
 
-/**
- * Authentication error (401)
- */
 export class AuthenticationError extends IntellectMemoryError {
   constructor(message = 'Invalid or missing API key') {
     super(message, 'AUTHENTICATION_FAILED', 401);
@@ -23,9 +18,6 @@ export class AuthenticationError extends IntellectMemoryError {
   }
 }
 
-/**
- * Authorization error (403)
- */
 export class AuthorizationError extends IntellectMemoryError {
   constructor(message = 'Insufficient permissions', scope?: string) {
     super(message, 'INSUFFICIENT_SCOPE', 403, scope ? { required_scope: scope } : undefined);
@@ -33,9 +25,6 @@ export class AuthorizationError extends IntellectMemoryError {
   }
 }
 
-/**
- * Resource not found error (404)
- */
 export class NotFoundError extends IntellectMemoryError {
   constructor(resource: string, id?: string) {
     const message = id ? `${resource} with id '${id}' not found` : `${resource} not found`;
@@ -44,9 +33,6 @@ export class NotFoundError extends IntellectMemoryError {
   }
 }
 
-/**
- * Rate limit exceeded error (429)
- */
 export class RateLimitError extends IntellectMemoryError {
   constructor(
     public readonly retryAfter: number,
@@ -62,9 +48,6 @@ export class RateLimitError extends IntellectMemoryError {
   }
 }
 
-/**
- * Quota exceeded error (402)
- */
 export class QuotaExceededError extends IntellectMemoryError {
   constructor(
     quota: string,
@@ -82,9 +65,6 @@ export class QuotaExceededError extends IntellectMemoryError {
   }
 }
 
-/**
- * Validation error (400)
- */
 export class ValidationError extends IntellectMemoryError {
   constructor(
     message: string,
@@ -95,12 +75,16 @@ export class ValidationError extends IntellectMemoryError {
   }
 }
 
-/**
- * Server error (500)
- */
+export class ProtocolError extends IntellectMemoryError {
+  constructor(message: string, status?: number) {
+    super(message, 'INVALID_RESPONSE', status);
+    this.name = 'ProtocolError';
+  }
+}
+
 export class ServerError extends IntellectMemoryError {
-  constructor(message = 'Internal server error') {
-    super(message, 'INTERNAL_ERROR', 500);
+  constructor(message = 'Internal server error', status = 500) {
+    super(message, 'INTERNAL_ERROR', status);
     this.name = 'ServerError';
   }
 }
