@@ -1,246 +1,178 @@
 # Intellect Memory
 
-Production-grade SaaS for AI-powered memory and knowledge management with semantic search.
+Intellect Memory is the shared contract library and TypeScript SDK for an AI memory API.
 
-## Stack
+This repository currently ships two packages:
 
-- **API**: Cloudflare Workers + Hono + Durable Objects + D1 + R2 + Vectorize
-- **Web**: Next.js 14 (App Router) + Tailwind + shadcn/ui + Glassmorphism UI
-- **Payments**: Stripe (subscriptions)
-- **AI**: OpenAI (embeddings with caching)
+- `@intellect-memory/sdk` — typed HTTP client
+- `@intellect-memory/shared` — Zod schemas, constants, types, and browser/edge-compatible utilities
 
-## Features
+The API service, web dashboard, Cloudflare infrastructure, and billing implementation are not part of this repository.
 
-- **Semantic Search**: Find memories by meaning, not just keywords
-- **Document Upload**: Store and process documents (R2)
-- **API Keys**: Secure, scoped, rotatable keys (only hash stored)
-- **Rate Limiting**: Distributed rate limiting via Durable Objects
-- **Usage Quotas**: Plan-based limits with real-time tracking
-- **Security**: Audit logging, threat modeling, input validation
+## Requirements
 
-## Plans
+- Node.js 20+
+- pnpm 10.22+
 
-| Feature | Free | Plus ($17/mo) | Pro ($299/mo) |
-|---------|------|---------------|---------------|
-| Tokens Processed | 1M | 3M | 75M |
-| Search Queries | 10K | 100K | 15M |
-| Documents | 100 | 1,000 | 100,000 |
-| API Keys | 2 | 10 | 100 |
-| Support | Email | Priority | Dedicated + Slack |
+The project is a pnpm workspace.
 
-## Quick Start
-
-### Prerequisites
-
-- Node.js 18+
-- npm 9+
-- Cloudflare account (for deployment)
-- Stripe account (for payments)
-- OpenAI API key
-
-### Local Development
+## Install
 
 ```bash
-# Clone and install
-git clone https://github.com/your-org/intellect-memory.git
-cd intellect-memory
-npm install
-
-# Start development servers (API + Web)
-./scripts/dev.sh
+git clone https://github.com/krishnashahane/intellectmemory.git
+cd intellectmemory
+pnpm install
 ```
 
-This will start:
-- API: http://localhost:8787
-- Web: http://localhost:3000
+The repository intentionally does not include the old generated lockfiles because they referenced application directories that are not present in the source tree. Running `pnpm install` creates a lockfile for the actual two-package workspace.
 
-### Environment Variables
+## Build
 
-Create `packages/api/.dev.vars`:
-```env
-STRIPE_SECRET_KEY=sk_test_xxx
-STRIPE_WEBHOOK_SECRET=whsec_xxx
-OPENAI_API_KEY=sk-xxx
-JWT_SECRET=your_32_char_secret_here
-ENCRYPTION_KEY=your_32_char_key_here
-```
-
-Create `packages/web/.env.local`:
-```env
-NEXT_PUBLIC_API_URL=http://localhost:8787
-```
-
-## Deployment
-
-### Deploy API to Cloudflare
-
-1. **Create Cloudflare resources**:
-```bash
-# Login to Cloudflare
-npx wrangler login
-
-# Create D1 database
-npx wrangler d1 create intellect-memory-db
-
-# Create R2 bucket
-npx wrangler r2 bucket create intellect-memory-documents
-
-# Create KV namespace
-npx wrangler kv:namespace create KV_CACHE
-
-# Create Vectorize index
-npx wrangler vectorize create intellect-memory-embeddings --dimensions=1536 --metric=cosine
-```
-
-2. **Update `packages/api/wrangler.toml`** with your resource IDs from the commands above.
-
-3. **Set secrets**:
-```bash
-cd packages/api
-npx wrangler secret put STRIPE_SECRET_KEY
-npx wrangler secret put STRIPE_WEBHOOK_SECRET
-npx wrangler secret put OPENAI_API_KEY
-npx wrangler secret put JWT_SECRET
-npx wrangler secret put ENCRYPTION_KEY
-```
-
-4. **Run migrations**:
-```bash
-npx wrangler d1 migrations apply intellect-memory-db --remote
-```
-
-5. **Deploy**:
-```bash
-npm run deploy:api
-```
-
-### Deploy Web to Vercel
-
-1. **Push to GitHub**
-
-2. **Connect to Vercel**:
-   - Import repository at [vercel.com/new](https://vercel.com/new)
-   - Set root directory to `packages/web`
-   - Add environment variable:
-     - `NEXT_PUBLIC_API_URL`: Your Cloudflare Workers URL
-
-3. **Deploy**:
-```bash
-npm run deploy:web
-```
-
-### Stripe Setup
-
-1. Create products and prices in Stripe Dashboard
-2. Update `packages/shared/src/types.ts` with your price IDs:
-   - `price_plus_monthly` for Plus plan
-   - `price_pro_monthly` for Pro plan
-3. Set up webhook endpoint: `https://your-api.workers.dev/v1/billing/webhook`
-4. Configure webhook events:
-   - `customer.subscription.created`
-   - `customer.subscription.updated`
-   - `customer.subscription.deleted`
-
-## API Reference
-
-### Authentication
+Build every package:
 
 ```bash
-# Register
-curl -X POST https://api.intellectmemory.com/v1/auth/register \
-  -H "Content-Type: application/json" \
-  -d '{"email": "user@example.com", "password": "securepass123"}'
-
-# Login
-curl -X POST https://api.intellectmemory.com/v1/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{"email": "user@example.com", "password": "securepass123"}'
+pnpm build
 ```
 
-### Memories
+Typecheck every package:
 
 ```bash
-# Create memory
-curl -X POST https://api.intellectmemory.com/v1/memories \
-  -H "Authorization: ApiKey im_xxx" \
-  -H "Content-Type: application/json" \
-  -d '{"content": "The user prefers dark mode", "metadata": {"category": "preferences"}}'
-
-# Search memories
-curl -X POST https://api.intellectmemory.com/v1/memories/search \
-  -H "Authorization: ApiKey im_xxx" \
-  -H "Content-Type: application/json" \
-  -d '{"query": "What are the user settings?", "limit": 10}'
-
-# List memories
-curl https://api.intellectmemory.com/v1/memories \
-  -H "Authorization: ApiKey im_xxx"
+pnpm typecheck
 ```
 
-### API Keys
+Check Markdown/JSON/YAML/TypeScript formatting:
 
 ```bash
-# Create API key (key returned ONLY ONCE)
-curl -X POST https://api.intellectmemory.com/v1/api-keys \
-  -H "Authorization: Bearer session_token" \
-  -H "Content-Type: application/json" \
-  -d '{"name": "Production API", "scopes": ["memories:read", "memories:write", "search:read"]}'
-
-# List API keys (only prefixes shown)
-curl https://api.intellectmemory.com/v1/api-keys \
-  -H "Authorization: Bearer session_token"
-
-# Rotate API key
-curl -X POST https://api.intellectmemory.com/v1/api-keys/{id}/rotate \
-  -H "Authorization: Bearer session_token"
+pnpm format:check
 ```
 
-## Security
+## SDK usage
 
-### API Key Security
-- Keys are generated with 256 bits of entropy
-- Only SHA-256 hash is stored in database
-- Prefix stored for identification (`im_xxxxxxxx`)
-- Scoped permissions per key
-- Rotatable without downtime
+Install the SDK package into an application after publishing or from a local workspace.
 
-### Defensive Security Features
-- SQL injection prevention (parameterized queries)
-- XSS protection (CSP headers)
-- Rate limiting (per-user, plan-based)
-- Audit logging (all mutations)
-- Input validation and sanitization
-- Threat model documented in database
+```ts
+import { IntellectMemory } from '@intellect-memory/sdk';
 
-## Architecture
+const client = new IntellectMemory({
+  apiKey: process.env.INTELLECT_MEMORY_API_KEY!,
+});
 
+const created = await client.addMemory({
+  content: 'The user prefers compact interfaces.',
+  metadata: {
+    category: 'preferences',
+  },
+});
+
+const results = await client.search({
+  query: 'What interface preferences are stored?',
+  limit: 5,
+});
+
+console.log(created.memory_item_id);
+console.log(results.results);
 ```
-packages/
-├── api/                 # Cloudflare Workers API
+
+### Custom API endpoint
+
+```ts
+const client = new IntellectMemory({
+  apiKey: process.env.INTELLECT_MEMORY_API_KEY!,
+  baseUrl: 'https://example.com',
+  timeout: 15_000,
+  maxRetries: 2,
+});
+```
+
+The client rejects non-HTTP(S) base URLs and URLs containing embedded credentials.
+
+## SDK capabilities
+
+The current SDK exposes:
+
+- create, read, list, update, and delete memory operations
+- semantic search
+- usage and daily-usage queries
+- RAG-style `ask`
+- `solve`
+- defensive `secureReview`
+
+The SDK also exposes specialized error classes so callers can handle authentication, authorization, validation, rate-limit, quota, not-found, server, and protocol failures separately.
+
+## Retry behavior
+
+Transient failures are retried with bounded backoff.
+
+Automatic retries are allowed for idempotent methods and for write operations only when the caller supplies an idempotency key:
+
+```ts
+await client.addMemory(
+  {
+    content: 'Idempotent write',
+    metadata: {},
+  },
+  '550e8400-e29b-41d4-a716-446655440000',
+);
+```
+
+The SDK also handles numeric and HTTP-date `Retry-After` values with a maximum delay.
+
+## Shared package
+
+`@intellect-memory/shared` contains:
+
+- plan definitions and limits
+- API scopes and error codes
+- Zod request/response schemas
+- cryptographic helpers
+- cursor encoding/decoding
+- password hashing/verification helpers
+- text chunking and normalization utilities
+
+The shared utilities use Web Crypto-compatible APIs so they can be used in browser and edge runtimes.
+
+## Security improvements
+
+The current codebase includes several defensive changes:
+
+- secure random API keys generated from 32 random bytes
+- constant-time string comparison for sensitive comparisons
+- validated password salts
+- bounded request retry counts and retry delays
+- no automatic retries for non-idempotent writes without an idempotency key
+- strict base-URL validation
+- URL-safe cursor encoding
+- bounded integer/size utility inputs
+- explicit protocol errors when the API returns malformed JSON or an unexpected response envelope
+
+API keys and other secrets should still be supplied through environment variables or a secret manager, not committed to source control.
+
+## Repository layout
+
+```text
+intellectmemory/
+├── sdk/
 │   ├── src/
-│   │   ├── durable-objects/  # Rate limiter, session manager
-│   │   ├── middleware/       # Auth, rate limit, security
-│   │   ├── routes/           # API endpoints
-│   │   ├── services/         # OpenAI, Stripe, Vectorize
-│   │   └── utils/            # Crypto, validation, response
-│   └── migrations/           # D1 SQL migrations
-├── web/                 # Next.js dashboard
-│   └── src/
-│       ├── app/              # App Router pages
-│       ├── components/       # UI components
-│       └── lib/              # API client, utilities
-└── shared/              # Shared types and constants
+│   ├── package.json
+│   └── tsconfig.json
+├── shared/
+│   ├── src/
+│   ├── package.json
+│   └── tsconfig.json
+├── API.md
+├── package.json
+├── pnpm-workspace.yaml
+└── tsconfig.json
 ```
 
-## Assumptions Made
+## API contract
 
-1. **Authentication**: Simple password hashing for demo; production should use bcrypt/argon2
-2. **Email verification**: Not implemented; add for production
-3. **Password reset**: Not implemented; add for production
-4. **OAuth**: Not implemented; add Google/GitHub login for production
-5. **Embedding model**: Using `text-embedding-3-small` (1536 dimensions)
-6. **Stripe prices**: Placeholder IDs; update with real Stripe price IDs
+See [API.md](API.md) for the HTTP endpoints and response contract expected by the SDK.
+
+## Important scope note
+
+This repository is not a complete hosted SaaS implementation. There is no committed `apps/api`, `apps/web`, database migration set, Cloudflare Worker, Stripe integration, or deployment configuration in the current source tree. Documentation should be read as SDK/shared-package documentation, not as a claim that those backend services ship here.
 
 ## License
 
-MIT
+MIT. See [LICENSE](LICENSE).
